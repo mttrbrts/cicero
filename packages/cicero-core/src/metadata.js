@@ -11,9 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
+
 const logger = require('./logger');
+
 // This code is derived from BusinessNetworkMetadata in Hyperleger Composer composer-common.
+
 /**
  * Defines the metadata for a Template, including the name, version, README markdown.
  * @class
@@ -21,6 +25,7 @@ const logger = require('./logger');
  * @memberof module:cicero-core
  */
 class Metadata {
+
     /**
      * Create the Metadata.
      * <p>
@@ -43,23 +48,30 @@ class Metadata {
     constructor(packageJson, readme, samples) {
         const method = 'constructor';
         logger.entry(method, readme, samples);
-        if (!packageJson || typeof (packageJson) !== 'object') {
+
+        if(!packageJson || typeof(packageJson) !== 'object') {
             throw new Error('package.json is required and must be an object');
         }
-        if (!samples || typeof (samples) !== 'object') {
+
+        if(!samples || typeof(samples) !== 'object') {
             throw new Error('sample.txt is required');
         }
+
         if (!packageJson.name || !this._validName(packageJson.name)) {
-            throw new Error('template name can only contain lowercase alphanumerics, _ or -');
+            throw new Error ('template name can only contain lowercase alphanumerics, _ or -');
         }
+
         this.packageJson = packageJson;
-        if (readme && typeof (readme) !== 'string') {
+
+        if(readme && typeof(readme) !== 'string') {
             throw new Error('README must be a string');
         }
+
         this.readme = readme;
         this.samples = samples;
         logger.exit(method);
     }
+
     /**
      * check to see if it is a valid name. for some reason regex is not working when this executes
      * inside the chaincode runtime, which is why regex hasn't been used.
@@ -70,16 +82,17 @@ class Metadata {
      * @private
      */
     _validName(name) {
-        const validChars = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'];
-        for (let i = 0; i < name.length; i++) {
+        const validChars = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+            '0','1','2','3','4','5','6','7','8','9','-','_'];
+        for (let i = 0; i<name.length; i++){
             const strChar = name.charAt(i);
-            if (validChars.indexOf(strChar) === -1) {
+            if ( validChars.indexOf(strChar) === -1 ) {
                 return false;
             }
         }
         return true;
     }
+
     /**
      * Returns the samples for this template.
      * @return {object} the sample files for the template
@@ -87,6 +100,7 @@ class Metadata {
     getSamples() {
         return this.samples;
     }
+
     /**
      * Returns the sample for this template in the given locale. This may be null.
      * If no locale is specified returns the default sample if it has been specified.
@@ -95,16 +109,15 @@ class Metadata {
      * @return {string} the sample file for the template in the given locale or null
      */
     getSample(locale) {
-        if (!locale && 'default' in this.samples) {
+        if(!locale && 'default' in this.samples){
             return this.samples.default;
-        }
-        else if (locale && locale in this.samples) {
+        } else if (locale && locale in this.samples){
             return this.samples[locale];
-        }
-        else {
+        } else {
             return null;
         }
     }
+
     /**
      * Returns the README.md for this template. This may be null if the template does not have a README.md
      * @return {String} the README.md file for the template or null
@@ -112,6 +125,7 @@ class Metadata {
     getREADME() {
         return this.readme;
     }
+
     /**
      * Returns the package.json for this template.
      * @return {object} the Javascript object for package.json
@@ -119,6 +133,7 @@ class Metadata {
     getPackageJson() {
         return this.packageJson;
     }
+
     /**
      * Returns the name for this template.
      * @return {string} the name of the template
@@ -126,6 +141,7 @@ class Metadata {
     getName() {
         return this.packageJson.name;
     }
+
     /**
      * Returns the description for this template.
      * @return {string} the description of the template
@@ -133,6 +149,7 @@ class Metadata {
     getDescription() {
         return this.packageJson.description;
     }
+
     /**
      * Returns the version for this template.
      * @return {string} the description of the template
@@ -140,6 +157,7 @@ class Metadata {
     getVersion() {
         return this.packageJson.version;
     }
+
     /**
      * Returns the identifier for this template, formed from name@version.
      * @return {string} the identifier of the template
@@ -148,4 +166,5 @@ class Metadata {
         return this.packageJson.name + '@' + this.packageJson.version;
     }
 }
+
 module.exports = Metadata;

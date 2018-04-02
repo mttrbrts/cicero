@@ -11,7 +11,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
+
 const Metadata = require('./metadata');
 const fs = require('fs');
 const fsPath = require('path');
@@ -28,18 +30,23 @@ const ScriptManager = require('composer-common').ScriptManager;
 const Serializer = require('composer-common').Serializer;
 const Writer = require('composer-common').Writer;
 const logger = require('./logger');
+
 const nearley = require('nearley');
 const compile = require('nearley/lib/compile');
 const generate = require('nearley/lib/generate');
 const nearleyGrammar = require('nearley/lib/nearley-language-bootstrapped');
 const templateGrammar = require('./tdl.js');
 const GrammarVisitor = require('./grammarvisitor');
+
 const Jura = require('jura-compiler/lib/jura');
+
 const ENCODING = 'utf8';
 // Matches 'sample.txt' or 'sample_TAG.txt' where TAG is an IETF language tag (BCP 47)
-const IETF_REGEXP = languageTagRegex({ exact: false }).toString().slice(1, -2);
+const IETF_REGEXP = languageTagRegex({ exact: false }).toString().slice(1,-2);
 const SAMPLE_FILE_REGEXP = xregexp('sample(_(' + IETF_REGEXP + '))?.txt$');
+
 // This code is derived from BusinessNetworkDefinition in Hyperleger Composer composer-common.
+
 /**
  * A template for a legal clause. A Template has a template model, request/response transaction types,
  * a template grammar (natural language for the template) as well as the business logic to execute the
@@ -49,6 +56,7 @@ const SAMPLE_FILE_REGEXP = xregexp('sample(_(' + IETF_REGEXP + '))?.txt$');
  * @memberof module:cicero-core
  */
 class Template {
+
     /**
      * Create the Template.
      * Note: Only to be called by framework code. Applications should
@@ -58,6 +66,7 @@ class Template {
      * @param {object} samples - the sample text for the template in different locales
      */
     constructor(packageJson, readme, samples) {
+
         this.modelManager = new ModelManager();
         this.scriptManager = new ScriptManager(this.modelManager);
         this.introspector = new Introspector(this.modelManager);
@@ -70,6 +79,7 @@ class Template {
         this.logicjsonly = false;
         this.logicboth = false;
     }
+
     /**
      * Returns the template model for the template
      * @throws {Error} if no template model is found, or multiple template models are found
@@ -80,16 +90,16 @@ class Template {
             const templateDecorator = item.getDecorator('AccordTemplateModel');
             return (templateDecorator !== null && this.metadata.getName() === templateDecorator.getArguments()[0]);
         });
+
         if (templateModels.length > 1) {
             throw new Error(`Found multiple concepts decorated with @AccordTemplateModel("${this.metadata.getName()}").`);
-        }
-        else if (templateModels.length === 0) {
+        } else if (templateModels.length === 0) {
             throw new Error(`Failed to find the template model. Decorate a concept with @AccordTemplateModel("${this.metadata.getName()}").`);
-        }
-        else {
+        } else {
             return templateModels[0];
         }
     }
+
     /**
      * Returns the identifier for this clause
      * @return {String} the identifier of this clause
@@ -97,6 +107,7 @@ class Template {
     getIdentifier() {
         return this.getMetadata().getIdentifier();
     }
+
     /**
      * Returns the metadata for this clause
      * @return {kMetadata} the metadata for this clause
@@ -104,6 +115,7 @@ class Template {
     getMetadata() {
         return this.metadata;
     }
+
     /**
      * Gets a parser object for this template
      * @return {object} the parser for this template
@@ -112,8 +124,10 @@ class Template {
         if (!this.grammarAst) {
             throw new Error('Must call setGrammar or buildGrammar before calling getParser');
         }
+
         return new nearley.Parser(nearley.Grammar.fromCompiled(this.grammarAst));
     }
+
     /**
      * Set the grammar for the template
      * @param {String} grammar  - the grammar for the template
@@ -122,11 +136,13 @@ class Template {
         this.grammarAst = Template.compileGrammar(grammar);
         this.grammar = grammar;
     }
+
     /**
      * Build a grammar from a template
      * @param {String} templatizedGrammar  - the annotated template
      */
     buildGrammar(templatizedGrammar) {
+
         logger.debug('buildGrammar', templatizedGrammar);
         const templateModel = this.getTemplateModel();
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(templateGrammar));
@@ -134,10 +150,12 @@ class Template {
         if (parser.results.length !== 1) {
             throw new Error('Ambigious parse!');
         }
+
         // parse the template grammar
         const ast = parser.results[0];
         logger.debug('Template AST', ast);
         const writer = new Writer();
+
         writer.writeLine(0, '\n');
         writer.writeLine(0, '# Dynamically Generated');
         writer.writeLine(0, '@builtin "number.ne"');
@@ -164,29 +182,32 @@ class Template {
         }
 %}`);
         writer.writeLine(0, '\n');
+
         // index all rules
         const rules = {};
         ast.data.forEach((element, index) => {
             // ignore empty chunks (issue #1) and missing optional last chunks
-            if (element && (element.type !== 'Chunk' || element.value.length > 0)) {
+            if(element && (element.type !== 'Chunk' || element.value.length > 0) ) {
                 logger.debug(`element C${index} ${JSON.stringify(element)}`);
                 rules['C' + index] = element;
             }
         }, this);
+
         // create the root rule
         writer.write('ROOT -> ');
         for (let rule in rules) {
             writer.write(`${rule} `);
         }
+
         writer.write('\n');
         writer.writeLine(0, '{%');
         writer.writeLine(0, `([${Object.keys(rules)}]) => {`);
         writer.writeLine(1, 'return {');
         writer.writeLine(3, `$class : "${templateModel.getFullyQualifiedName()}",`);
-        templateModel.getProperties().forEach((property, index) => {
-            const sep = index < templateModel.getProperties().length - 1 ? ',' : '';
+        templateModel.getProperties().forEach((property,index) => {
+            const sep = index < templateModel.getProperties().length-1 ? ',' : '';
             const bindingIndex = this.findFirstBinding(property.getName(), ast.data);
-            if (bindingIndex !== -1) { // ignore things like transactionId
+            if(bindingIndex !== -1) { // ignore things like transactionId
                 // TODO (DCS) add !==null check for BooleanBinding
                 writer.writeLine(3, `${property.getName()} : C${bindingIndex}${sep}`);
             }
@@ -194,74 +215,82 @@ class Template {
         writer.writeLine(1, '};');
         writer.writeLine(0, '}');
         writer.writeLine(0, '%}\n');
+
         // now we create each subordinate rule in turn
         let dynamicGrammar = '';
         for (let rule in rules) {
             const element = rules[rule];
             dynamicGrammar += '\n';
             dynamicGrammar += `${rule} -> `;
+
             switch (element.type) {
-                case 'Chunk':
-                case 'LastChunk':
-                    dynamicGrammar += this.cleanChunk(element.value);
-                    break;
-                case 'BooleanBinding':
-                    dynamicGrammar += `${element.string.value}:? {% (d) => {return d[0] !== null;}%} # ${element.fieldName.value}`;
-                    break;
-                case 'Binding':
-                    {
-                        const propertyName = element.fieldName.value;
-                        const property = templateModel.getProperty(propertyName);
-                        if (!property) {
-                            throw new Error(`Template references a property '${propertyName}' that is not declared in the template model '${templateModel.getFullyQualifiedName()}'. Details: ${JSON.stringify(element)}`);
-                        }
-                        let type = property.getType();
-                        // relationships need to be transformed into strings
-                        if (property instanceof RelationshipDeclaration) {
-                            type = 'String';
-                        }
-                        let action = '{% id %}';
-                        const decorator = property.getDecorator('AccordType');
-                        if (decorator) {
-                            if (decorator.getArguments().length > 0) {
-                                type = decorator.getArguments()[0];
-                            }
-                            if (decorator.getArguments().length > 1) {
-                                action = decorator.getArguments()[1];
-                            }
-                        }
-                        let suffix = ':';
-                        // TODO (DCS) need a serialization for arrays
-                        if (property.isArray()) {
-                            throw new Error('Arrays are not yet supported!');
-                            // suffix += '+';
-                        }
-                        if (property.isOptional()) {
-                            suffix += '?';
-                        }
-                        if (suffix === ':') {
-                            suffix = '';
-                        }
-                        dynamicGrammar += `${type}${suffix} ${action} # ${propertyName}`;
+            case 'Chunk':
+            case 'LastChunk':
+                dynamicGrammar += this.cleanChunk(element.value);
+                break;
+            case 'BooleanBinding':
+                dynamicGrammar += `${element.string.value}:? {% (d) => {return d[0] !== null;}%} # ${element.fieldName.value}`;
+                break;
+            case 'Binding': {
+                const propertyName = element.fieldName.value;
+                const property = templateModel.getProperty(propertyName);
+                if(!property) {
+                    throw new Error(`Template references a property '${propertyName}' that is not declared in the template model '${templateModel.getFullyQualifiedName()}'. Details: ${JSON.stringify(element)}`);
+                }
+                let type = property.getType();
+                // relationships need to be transformed into strings
+                if(property instanceof RelationshipDeclaration) {
+                    type = 'String';
+                }
+                let action = '{% id %}';
+
+                const decorator = property.getDecorator('AccordType');
+                if(decorator) {
+                    if( decorator.getArguments().length > 0) {
+                        type = decorator.getArguments()[0];
                     }
-                    break;
-                default:
-                    throw new Error(`Unrecognized type ${element.type}`);
+                    if( decorator.getArguments().length > 1) {
+                        action = decorator.getArguments()[1];
+                    }
+                }
+
+                let suffix = ':';
+                // TODO (DCS) need a serialization for arrays
+                if(property.isArray()) {
+                    throw new Error('Arrays are not yet supported!');
+                    // suffix += '+';
+                }
+                if(property.isOptional()) {
+                    suffix += '?';
+                }
+                if(suffix === ':') {
+                    suffix = '';
+                }
+                dynamicGrammar += `${type}${suffix} ${action} # ${propertyName}`;
+            }
+                break;
+            default:
+                throw new Error(`Unrecognized type ${element.type}`);
             }
         }
+
         writer.writeLine(0, dynamicGrammar);
         writer.writeLine(0, '\n');
+
         // add the grammar for the model
         const parameters = {
             writer: writer
         };
         const gv = new GrammarVisitor();
         this.getModelManager().accept(gv, parameters);
+
         const combined = parameters.writer.getBuffer();
         logger.debug('Generated template grammar' + combined);
+
         this.setGrammar(combined);
         this.templatizedGrammar = templatizedGrammar;
     }
+
     /**
      * Cleans a chunk of text to make it safe to include
      * as a grammar rule. We need to remove linefeeds and
@@ -272,11 +301,14 @@ class Template {
      */
     cleanChunk(input) {
         // we replace all \r and \n with \n
-        let text = input.replace(/\r?\n|\r/gm, '\\n');
+        let text = input.replace(/\r?\n|\r/gm,'\\n');
+
         // replace all " with \", even across newlines
         text = text.replace(/"/gm, '\\"');
+
         return `"${text}"`;
     }
+
     /**
      * Finds the first binding for the given property
      *
@@ -285,16 +317,17 @@ class Template {
      * @return {int} the index of the element or -1
      */
     findFirstBinding(propertyName, elements) {
-        for (let n = 0; n < elements.length; n++) {
+        for(let n=0; n < elements.length; n++) {
             const element = elements[n];
-            if (element.type === 'Binding' || element.type === 'BooleanBinding') {
-                if (element.fieldName.value === propertyName) {
+            if(element.type === 'Binding' || element.type === 'BooleanBinding') {
+                if(element.fieldName.value === propertyName) {
                     return n;
                 }
             }
         }
         return -1;
     }
+
     /**
      * Get the grammar for the template
      * @return {String} - the grammar for the template
@@ -302,6 +335,7 @@ class Template {
     getGrammar() {
         return this.grammar;
     }
+
     /**
      * Returns the name for this clause
      * @return {String} the name of this clause
@@ -309,6 +343,7 @@ class Template {
     getName() {
         return this.getMetadata().getName();
     }
+
     /**
      * Returns the version for this clause
      * @return {String} the version of this clause. Use semver module
@@ -317,6 +352,8 @@ class Template {
     getVersion() {
         return this.getMetadata().getVersion();
     }
+
+
     /**
      * Returns the description for this clause
      * @return {String} the description of this clause
@@ -324,33 +361,38 @@ class Template {
     getDescription() {
         return this.getMetadata().getDescription();
     }
+
     /**
      * Compiles a Nearley grammar to its AST
      * @param {string} sourceCode  - the source text for the grammar
      * @return {object} the AST for the grammar
      */
     static compileGrammar(sourceCode) {
+
         try {
             // Parse the grammar source into an AST
             const grammarParser = new nearley.Parser(nearleyGrammar);
             grammarParser.feed(sourceCode);
             const grammarAst = grammarParser.results[0]; // TODO check for errors
+
             // Compile the AST into a set of rules
             const grammarInfoObject = compile(grammarAst, {});
             // Generate JavaScript code from the rules
             const grammarJs = generate(grammarInfoObject, 'grammar');
+
             // Pretend this is a CommonJS environment to catch exports from the grammar.
             const module = {
                 exports: {}
             };
             eval(grammarJs);
             return module.exports;
-        }
-        catch (err) {
+        } catch (err) {
             logger.error(err);
             throw err;
         }
     }
+
+
     /**
      * Create a Clause from an archive.
      * @param {Buffer} Buffer  - the Buffer to a zip archive
@@ -371,6 +413,7 @@ class Template {
             let packageJsonContents = null;
             let grammar = null;
             let templatizedGrammar = null;
+
             logger.debug(method, 'Loading README.md');
             let readme = zip.file('README.md');
             if (readme) {
@@ -381,6 +424,7 @@ class Template {
                     readmeContents = contents;
                 });
             }
+
             logger.debug(method, 'Looking for sample files');
             let sampleFiles = zip.file(SAMPLE_FILE_REGEXP);
             sampleFiles.forEach(function (file) {
@@ -392,13 +436,14 @@ class Template {
                     let matches = file.name.match(SAMPLE_FILE_REGEXP);
                     let locale = 'default';
                     // Locale match found
-                    if (matches !== null && matches[2]) {
+                    if(matches !== null && matches[2]){
                         locale = matches[2];
                     }
                     logger.debug(method, 'Using sample file locale, ' + locale);
                     sampleTextFiles[locale] = contents;
                 });
             });
+
             logger.debug(method, 'Loading package.json');
             let packageJson = zip.file('package.json');
             if (packageJson === null) {
@@ -410,6 +455,7 @@ class Template {
                 logger.debug(method, 'Loaded package.json');
                 packageJsonContents = JSON.parse(contents);
             });
+
             logger.debug(method, 'Loading grammar.ne');
             let grammarNe = zip.file('grammar/grammar.ne');
             if (grammarNe !== null) {
@@ -419,13 +465,14 @@ class Template {
                     logger.debug(method, 'Loaded grammar.ne');
                     grammar = contents;
                 });
-            }
-            else {
+            } else {
                 logger.debug(method, 'Loading template.tem');
                 let template_txt = zip.file('grammar/template.tem');
+
                 if (template_txt === null) {
                     throw new Error('Failed to find grammar or template.');
                 }
+
                 promise = promise.then(() => {
                     return template_txt.async('string');
                 }).then((contents) => {
@@ -433,6 +480,7 @@ class Template {
                     templatizedGrammar = contents;
                 });
             }
+
             logger.debug(method, 'Looking for model files');
             let ctoFiles = zip.file(/models\/.*\.cto$/); //Matches any file which is in the 'models' folder and has a .cto extension
             ctoFiles.forEach(function (file) {
@@ -445,6 +493,7 @@ class Template {
                     ctoModelFiles.push(contents);
                 });
             });
+
             logger.debug(method, 'Looking for JavaScript files');
             let jsFiles = zip.file(/lib\/.*\.js$/); //Matches any file which is in the 'lib' folder and has a .js extension
             jsFiles.forEach(function (file) {
@@ -458,8 +507,10 @@ class Template {
                         'contents': contents
                     };
                     jsScriptFiles.push(tempObj);
+
                 });
             });
+
             logger.debug(method, 'Looking for Jura files');
             let juraFiles = zip.file(/lib\/.*\.jura$/); //Matches any file which is in the 'lib' folder and has a .jura extension
             juraFiles.forEach(function (file) {
@@ -475,11 +526,14 @@ class Template {
                     juraScriptFiles.push(tempObj);
                 });
             });
+
             return promise.then(() => {
                 logger.debug(method, 'Loaded package.json');
                 template = new Template(packageJsonContents, readmeContents, sampleTextFiles);
+
                 logger.debug(method, 'Adding model files to model manager');
                 template.modelManager.addModelFiles(ctoModelFiles, ctoModelFileNames); // Adds all cto files to model manager
+
                 logger.debug(method, 'Added model files to model manager');
                 logger.debug(method, 'Adding JavaScript files to script manager');
                 jsScriptFiles.forEach(function (obj) {
@@ -487,62 +541,70 @@ class Template {
                     template.scriptManager.addScript(jsObject); // Adds all js files to script manager
                 });
                 logger.debug(method, 'Added JavaScript files to script manager');
+
                 juraScriptFiles.forEach(function (obj) {
                     let juraObject = template.scriptManager.createScript(obj.name, 'jura', obj.contents);
                     template.scriptManager.addScript(juraObject); // Adds all jura files to script manager
                 });
                 logger.debug(method, 'Added Jura files to script manager');
+
                 // check the template model
                 template.getTemplateModel();
+
                 logger.debug(method, 'Setting grammar');
                 if (grammar) {
                     template.setGrammar(grammar);
-                }
-                else {
+                } else {
                     template.buildGrammar(templatizedGrammar);
                 }
+
                 logger.exit(method, template.toString());
                 return template; // Returns template
             });
         });
     }
+
     /**
      * Store a Template as an archive.
      * @param {Object} [options]  - JSZip options
      * @return {Buffer} buffer  - the zlib buffer
      */
     toArchive(options) {
+
         let zip = new JSZip();
+
         let packageFileContents = JSON.stringify(this.getMetadata().getPackageJson());
         zip.file('package.json', packageFileContents, options);
+
         // save the grammar
         zip.file('grammar/', null, Object.assign({}, options, {
             dir: true
         }));
         if (this.grammar) {
             zip.file('grammar/grammar.ne', this.grammar, options);
-        }
-        else {
+        } else {
             zip.file('grammar/template.tem', this.templatizedGrammar, options);
         }
+
         // save the README.md if present
         if (this.getMetadata().getREADME()) {
             zip.file('README.md', this.getMetadata().getREADME(), options);
         }
+
         // Save the sample files
         const sampleFiles = this.getMetadata().getSamples();
-        if (sampleFiles) {
+        if(sampleFiles){
             Object.keys(sampleFiles).forEach(function (locale) {
                 let fileName;
-                if (locale === 'default') {
+                if(locale === 'default'){
                     fileName = 'sample.txt';
-                }
-                else {
+                } else {
                     fileName = `sample_${locale}.txt`;
                 }
                 zip.file(fileName, sampleFiles[locale], options);
             });
         }
+
         let modelManager = this.getModelManager();
         let modelFiles = modelManager.getModelFiles();
         zip.file('models/', null, Object.assign({}, options, {
@@ -556,13 +618,13 @@ class Template {
             }
             if (file.fileName === 'UNKNOWN' || file.fileName === null || !file.fileName) {
                 fileName = file.namespace + '.cto';
-            }
-            else {
+            } else {
                 let fileIdentifier = file.fileName;
                 fileName = fsPath.basename(fileIdentifier);
             }
             zip.file('models/' + fileName, file.definitions, options);
         });
+
         let scriptManager = this.getScriptManager();
         let scriptFiles = scriptManager.getScripts();
         zip.file('lib/', null, Object.assign({}, options, {
@@ -573,14 +635,18 @@ class Template {
             let fileName = fsPath.basename(fileIdentifier);
             zip.file('lib/' + fileName, file.contents, options);
         });
+
         return zip.generateAsync({
             type: 'nodebuffer'
         }).then(something => {
             return Promise.resolve(something).then(result => {
                 return result;
             });
+
         });
+
     }
+
     /**
      * Builds a Template from the contents of a directory.
      * The directory must include a package.json in the root (used to specify
@@ -623,20 +689,26 @@ class Template {
      * @return {Promise} a Promise to the instantiated business network
      */
     static fromDirectory(path, options) {
+
         if (!options) {
             options = {};
         }
+
         if (!options.dependencyGlob) {
             options.dependencyGlob = '**';
         }
+
         if (!options.modelFileGlob) {
             options.modelFileGlob = '**/models/**/*.cto';
         }
+
         if (!options.scriptGlob) {
             options.scriptGlob = '**/lib/**/*.+(js|jura)';
         }
+
         const method = 'fromDirectory';
         logger.entry(method, path);
+
         // grab the README.md
         let readmeContents = null;
         const readmePath = fsPath.resolve(path, 'README.md');
@@ -646,42 +718,50 @@ class Template {
                 logger.debug(method, 'Loaded README.md', readmeContents);
             }
         }
+
         // grab the package.json
         const packageJsonPath = fsPath.resolve(path, 'package.json');
         if (!fs.existsSync(packageJsonPath)) {
             throw new Error('Failed to find package.json');
         }
+
         let packageJsonContents = fs.readFileSync(packageJsonPath, ENCODING);
         logger.debug(method, 'Loaded package.json', packageJsonContents);
+
         logger.debug(method, 'Looking for sample files');
         let sampleTextFiles = {};
         let sampleFiles = glob.sync('@(sample.txt|sample_*.txt)', { cwd: fsPath.resolve(path) });
-        if (sampleFiles.length === 0) {
+        if (sampleFiles.length === 0){
             throw new Error('Failed to find any sample files. e.g. sample.txt, sample_fr.txt');
         }
         sampleFiles.forEach(function (file) {
             const matches = file.match(SAMPLE_FILE_REGEXP);
-            if (file !== 'sample.txt' && matches === null) {
+            if(file !== 'sample.txt' && matches === null){
                 throw new Error('Invalid locale used in sample file, ' + file + '. Locales should be IETF language tags, e.g. sample_fr.txt');
             }
+
             logger.debug(method, 'Found sample file, loading it: ' + file);
             const sampleFilePath = fsPath.resolve(path, file);
             const sampleFileContents = fs.readFileSync(sampleFilePath, ENCODING);
             logger.debug(method, 'Loaded ' + file, sampleFileContents);
+
             let locale = 'default';
             // Match found
-            if (matches !== null && matches[2]) {
+            if(matches !== null && matches[2]){
                 locale = matches[2];
             }
             logger.debug(method, 'Using sample file locale', locale);
             sampleTextFiles[locale] = sampleFileContents;
         });
+
         // parse the package.json
         let jsonObject = JSON.parse(packageJsonContents);
+
         // create the template
         const template = new Template(jsonObject, readmeContents, sampleTextFiles);
         const modelFiles = [];
         const modelFileNames = [];
+
         // define a help function that will filter out files
         // that are inside a node_modules directory under the path
         // we are processing
@@ -693,9 +773,11 @@ class Template {
             let result = subPath.split(fsPath.sep).some((element) => {
                 return element === 'node_modules';
             });
+
             logger.debug(method, file, result);
             return result;
         };
+
         // find CTO files outside the npm install directory
         Template.processDirectory(path, {
             accepts: function (file) {
@@ -712,9 +794,11 @@ class Template {
                 logger.debug(method, 'Found model file', path);
             }
         });
+
         template.getModelManager().addModelFiles(modelFiles, modelFileNames, true);
         return template.getModelManager().updateExternalModels().then(() => {
             logger.debug(method, 'Added model files', modelFiles.length);
+
             // find script files outside the npm install directory
             const scriptFiles = [];
             Template.processDirectory(path, {
@@ -730,43 +814,50 @@ class Template {
                     let filePath = fsPath.parse(path);
                     if (filePath.ext.toLowerCase() === '.jura') {
                         logger.debug(method, 'Compiling Jura to JavaScript ', path);
-                        contents = Jura.compileToJavaScript(contents, null, null, true);
+                        contents = Jura.compileToJavaScript(contents,null,null,true);
                     }
                     const jsScript = template.getScriptManager().createScript(path, filePath.ext.toLowerCase(), contents);
                     scriptFiles.push(jsScript);
                     logger.debug(method, 'Found script file ', path);
                 }
             });
+
             if (modelFiles.length === 0) {
                 throw new Error('Failed to find a model file.');
             }
+
             for (let script of scriptFiles) {
                 template.getScriptManager().addScript(script);
             }
+
             logger.debug(method, 'Added script files', scriptFiles.length);
+
             // check the template model
             template.getTemplateModel();
+
             // grab the grammar
             let grammarNe = null;
+
             try {
                 grammarNe = fs.readFileSync(fsPath.resolve(path, 'grammar/grammar.ne'), ENCODING);
-            }
-            catch (err) {
+            } catch (err) {
                 // ignore
             }
+
             if (!grammarNe) {
                 let template_txt = fs.readFileSync(fsPath.resolve(path, 'grammar/template.tem'), ENCODING);
                 template.buildGrammar(template_txt);
                 logger.debug(method, 'Loaded template.tem', template_txt);
-            }
-            else {
+            } else {
                 logger.debug(method, 'Loaded grammar.ne', grammarNe);
                 template.setGrammar(grammarNe);
             }
+
             logger.exit(method, path);
             return Promise.resolve(template);
         });
     }
+
     /**
      * @param {String} path - the path to process
      * @param {Object} fileProcessor - the file processor. It must have
@@ -781,6 +872,7 @@ class Template {
             Template.processFile(item, fileProcessor);
         });
     }
+
     /**
      * @param {String} file - the file to process
      * @param {Object} fileProcessor - the file processor. It must have
@@ -788,15 +880,17 @@ class Template {
      * @private
      */
     static processFile(file, fileProcessor) {
+
         if (fileProcessor.accepts(file)) {
             logger.debug('processFile', 'FileProcessor accepted', file);
             let fileContents = fs.readFileSync(file, ENCODING);
             fileProcessor.process(file, fileContents);
-        }
-        else {
+        } else {
             logger.debug('processFile', 'FileProcessor rejected', file);
         }
     }
+
+
     /**
      * @param {String} dir - the dir to walk
      * @param {Object[]} filelist - input files
@@ -813,13 +907,14 @@ class Template {
                 if (fileProcessor.acceptsDir(nestedPath)) {
                     filelist = Template.walkSync(nestedPath, filelist, fileProcessor);
                 }
-            }
-            else {
+            } else {
                 filelist.push(nestedPath);
             }
         });
         return filelist;
     }
+
+
     /**
      * Visitor design pattern
      * @param {Object} visitor - the visitor
@@ -830,6 +925,7 @@ class Template {
     accept(visitor, parameters) {
         return visitor.visit(this, parameters);
     }
+
     /**
      * Provides access to the Introspector for this business network. The Introspector
      * is used to reflect on the types defined within this business network.
@@ -838,6 +934,7 @@ class Template {
     getIntrospector() {
         return this.introspector;
     }
+
     /**
      * Provides access to the Factory for this business network. The Factory
      * is used to create the types defined in this business network.
@@ -846,6 +943,7 @@ class Template {
     getFactory() {
         return this.factory;
     }
+
     /**
      * Provides access to the Serializer for this business network. The Serializer
      * is used to serialize instances of the types defined within this business network.
@@ -854,6 +952,7 @@ class Template {
     getSerializer() {
         return this.serializer;
     }
+
     /**
      * Provides access to the ScriptManager for this business network. The ScriptManager
      * manage access to the scripts that have been defined within this business network.
@@ -863,6 +962,7 @@ class Template {
     getScriptManager() {
         return this.scriptManager;
     }
+
     /**
      * Provides access to the ModelManager for this business network. The ModelManager
      * manage access to the models that have been defined within this business network.
@@ -872,6 +972,7 @@ class Template {
     getModelManager() {
         return this.modelManager;
     }
+
     /**
      * Set the samples within the Metadata
      * @param {object} samples the samples for the tempalte
@@ -880,6 +981,7 @@ class Template {
     setSamples(samples) {
         this.metadata = new Metadata(this.metadata.getPackageJson(), this.metadata.getREADME(), samples);
     }
+
     /**
      * Set a locale-specified sample within the Metadata
      * @param {object} sample the samples for the template
@@ -891,6 +993,7 @@ class Template {
         samples[locale] = sample;
         this.metadata = new Metadata(this.metadata.getPackageJson(), this.metadata.getREADME(), samples);
     }
+
     /**
      * Set the readme file within the Metadata
      * @param {String} readme the readme in markdown for the business network
@@ -899,6 +1002,7 @@ class Template {
     setReadme(readme) {
         this.metadata = new Metadata(this.metadata.getPackageJson(), readme, this.metadata.getSamples());
     }
+
     /**
      * Set the packageJson within the Metadata
      * @param {object} packageJson the JS object for package.json
@@ -907,6 +1011,7 @@ class Template {
     setPackageJson(packageJson) {
         this.metadata = new Metadata(packageJson, this.metadata.getREADME(), this.metadata.getSamples());
     }
+
     /**
      * Provides a list of the input types that are accepted by this Template. Types use the fully-qualified form.
      * @return {Array} a list of the request types
@@ -918,23 +1023,28 @@ class Template {
             return ele.getFunctionDeclarations();
         })
             .reduce((flat, next) => {
-            return flat.concat(next);
-        })
+                return flat.concat(next);
+            })
             .filter((ele) => {
-            return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
-        }).map((ele) => {
-            return ele;
-        });
+                return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
+            }).map((ele) => {
+                return ele;
+            });
+
         if (functionDeclarations.length === 0) {
             throw new Error('Did not find any function declarations with the @AccordClauseLogic annotation');
         }
+
         let types = [];
+
         functionDeclarations.forEach((ele, n) => {
             types.push(ele.getParameterTypes()[1]);
         });
+
         logger.debug(types);
         return types;
     }
+
     /**
      * Provides a list of the return types that of this Template. Types use the fully-qualified form.
      * @return {Array} a list of the response types
@@ -944,16 +1054,18 @@ class Template {
             return ele.getFunctionDeclarations();
         })
             .reduce((flat, next) => {
-            return flat.concat(next);
-        })
+                return flat.concat(next);
+            })
             .filter((ele) => {
-            return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
-        }).map((ele) => {
-            return ele;
-        });
+                return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
+            }).map((ele) => {
+                return ele;
+            });
+
         if (functionDeclarations.length === 0) {
             throw new Error('Did not find any function declarations with the @AccordClauseLogic annotation');
         }
+
         let types = [];
         functionDeclarations.forEach((ele, n) => {
             types.push(ele.getParameterTypes()[2]);
@@ -961,5 +1073,7 @@ class Template {
         logger.debug(types);
         return types;
     }
+
 }
+
 module.exports = Template;

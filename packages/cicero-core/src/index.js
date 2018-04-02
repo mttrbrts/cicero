@@ -14,22 +14,12 @@
 
 'use strict';
 
-const index = require('../lib/index');
+/**
+ * Cicero Core - defines the core data types for Cicero.
+ * @module cicero-core
+ */
 
-const chai = require('chai');
-
-chai.should();
-chai.use(require('chai-things'));
-chai.use(require('chai-as-promised'));
-
-describe('Module', () => {
-
-    describe('#exports', () => {
-
-        it('should export classes', () => {
-            index.Clause.should.not.be.null;
-            index.Template.should.not.be.null;
-            index.version.should.not.be.null;
-        });
-    });
-});
+module.exports.Clause = require('./clause');
+module.exports.Template = require('./template');
+module.exports.version = require('../package.json');
+module.exports.logger = require('./logger');

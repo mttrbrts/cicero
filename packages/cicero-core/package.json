@@ -3,17 +3,18 @@
   "version": "0.2.46",
   "description": "Cicero Core - implementation of Accord Protocol Template Specification",
   "engines": {
-    "node": ">=8",
+    "node": ">=6",
     "npm": ">=3"
   },
   "files": [
     "lib"
   ],
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "prepare": "nearleyc ./lib/tdl.ne -o ./lib/tdl.js",
-    "pretest": "npm run lint",
-    "lint": "eslint .",
+    "compile": "tsc",
+    "prepare": "nearleyc ./src/tdl.ne -o ./lib/tdl.js",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint ./src",
     "postlint": "npm run licchk",
     "licchk": "license-check",
     "test": "mocha && nyc mocha"
@@ -45,7 +46,9 @@
     "mocha": "^3.4.2",
     "mockery": "^2.0.0",
     "nyc": "^11.3.0",
-    "sinon": "^4.0.1"
+    "sinon": "^4.0.1",
+    "typescript": "^2.8.1",
+    "typescript-eslint-parser": "^14.0.0"
   },
   "dependencies": {
     "composer-common": "0.17.4",
@@ -71,12 +74,12 @@
   },
   "license-check-config": {
     "src": [
-      "**/*.js",
-      "!./test/data/**/*",
+      "./src/**/*.js",
+      "!./test/**/*",
+      "!./lib/**/*",
       "!./coverage/**/*",
       "!./node_modules/**/*",
-      "!./out/**/*",
-      "!./lib/tdl.js"
+      "!./out/**/*"
     ],
     "path": "header.txt",
     "blocking": true,

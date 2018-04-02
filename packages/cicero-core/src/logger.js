@@ -11,31 +11,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 'use strict';
+
 const winston = require('winston');
 const fs = require('fs');
 const env = process.env.NODE_ENV || 'development';
 const tsFormat = () => (new Date()).toLocaleTimeString();
+
 const logDir = 'log';
 // Create the log directory if it does not exist
 if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
 }
-let logger = new (winston.Logger)({
+
+let logger = new(winston.Logger)({
     transports: [
-        new (winston.transports.Console)({
+        new(winston.transports.Console)({
             colorize: true,
             timestamp: tsFormat,
             level: 'info'
         }),
-        new (winston.transports.File)({
+        new(winston.transports.File)({
             name: 'logs-file',
             filename: `${logDir}/trace.log`,
             level: env === 'development' ? 'debug' : 'info'
         })
     ]
 });
+
 logger.entry = logger.debug;
 logger.exit = logger.debug;
+
 logger.log('info', 'Logging initialized.', new Date());
 module.exports = logger;

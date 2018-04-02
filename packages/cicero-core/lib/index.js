@@ -11,15 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 'use strict';
-
 /**
  * Cicero Core - defines the core data types for Cicero.
  * @module cicero-core
  */
-
-module.exports.Clause = require('./lib/clause');
-module.exports.Template = require('./lib/template');
-module.exports.version = require('./package.json');
-module.exports.logger = require('./lib/logger');
+module.exports.Clause = require('./clause');
+module.exports.Template = require('./template');
+module.exports.version = require('../package.json');
+module.exports.logger = require('./logger');
