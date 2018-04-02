@@ -8,8 +8,9 @@
   },
   "main": "index.js",
   "scripts": {
-    "pretest": "npm run lint",
-    "lint": "eslint .",
+    "compile": "tsc",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint ./src",
     "postlint": "npm run licchk",
     "licchk": "license-check",
     "test": "mocha && nyc mocha"
@@ -41,7 +42,8 @@
     "mocha": "^3.4.2",
     "mockery": "^2.0.0",
     "nyc": "^11.3.0",
-    "sinon": "^4.0.1"
+    "sinon": "^4.0.1",
+    "typescript": "^2.8.1"
   },
   "dependencies": {
     "cicero-core": "^0.2.46",
@@ -57,8 +59,9 @@
   },
   "license-check-config": {
     "src": [
-      "**/*.js",
-      "!./test/data/**/*",
+      "./src/**/*.js",
+      "!./test/**/*",
+      "!./lib/**/*",
       "!./coverage/**/*",
       "!./node_modules/**/*",
       "!./out/**/*"
