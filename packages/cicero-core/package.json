@@ -11,8 +11,8 @@
   ],
   "main": "lib/index.js",
   "scripts": {
-    "compile": "tsc",
-    "prepare": "nearleyc ./src/tdl.ne -o ./lib/tdl.js",
+    "compile": "tsc && nearleyc ./src/tdl.ne -o ./lib/tdl.js",
+    "prepare": "nearleyc ./src/tdl.ne -o ./src/tdl.js",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint ./src",
     "postlint": "npm run licchk",
@@ -75,6 +75,7 @@
   "license-check-config": {
     "src": [
       "./src/**/*.js",
+      "!./src/tdl.js",
       "!./test/**/*",
       "!./lib/**/*",
       "!./coverage/**/*",
@@ -96,10 +97,10 @@
       "json"
     ],
     "include": [
-      "lib/**/*.js"
+      "src/**/*.js"
     ],
     "exclude": [
-      "lib/tdl.js"
+      "src/tdl.js"
     ],
     "all": true,
     "check-coverage": true,

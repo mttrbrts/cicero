@@ -43,6 +43,7 @@
     "mockery": "^2.0.0",
     "nyc": "^11.3.0",
     "sinon": "^4.0.1",
+    "ts-node": "^5.0.1",
     "typescript": "^2.8.1"
   },
   "dependencies": {
@@ -81,7 +82,7 @@
       "json"
     ],
     "include": [
-      "lib/**/*.js"
+      "src/**/*.js"
     ],
     "exclude": [],
     "all": true,

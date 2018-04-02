@@ -12,8 +12,8 @@
  * limitations under the License.
  */
 'use strict';
-const logger = require('./logger');
-const crypto = require('crypto');
+var logger = require('./logger');
+var crypto = require('crypto');
 /**
  * A Clause is executable business logic, linked to a natural language (legally enforceable) template.
  * A Clause must be constructed with a template and then prior to execution the data for the clause must be set.
@@ -23,12 +23,12 @@ const crypto = require('crypto');
  * @class
  * @memberof module:cicero-core
  */
-class Clause {
+var Clause = /** @class */ (function () {
     /**
      * Create the Clause and link it to a Template.
      * @param {Template} template  - the template for the clause
      */
-    constructor(template) {
+    function Clause(template) {
         this.template = template;
         this.data = null;
     }
@@ -37,79 +37,80 @@ class Clause {
      * @param {object} data  - the data for the clause, must be an instance of the
      * template model for the clause's template
      */
-    setData(data) {
+    Clause.prototype.setData = function (data) {
         // verify that data is an instance of the template model
-        const templateModel = this.getTemplate().getTemplateModel();
+        var templateModel = this.getTemplate().getTemplateModel();
         if (data.$class !== templateModel.getFullyQualifiedName()) {
-            throw new Error(`Invalid data, must be a valid instance of the template model ${templateModel.getFullyQualifiedName()} but got: ${JSON.stringify(data)} `);
+            throw new Error("Invalid data, must be a valid instance of the template model " + templateModel.getFullyQualifiedName() + " but got: " + JSON.stringify(data) + " ");
         }
         // validate the data using the template model
         logger.debug('Setting clause data: ' + JSON.stringify(data));
-        const resource = this.template.getSerializer().fromJSON(data);
+        var resource = this.template.getSerializer().fromJSON(data);
         resource.validate();
         // passed validation!
         this.data = data;
-    }
+    };
     /**
      * Get the data for the clause
      * @return {object} - the data for the clause, or null if it has not been set
      */
-    getData() {
+    Clause.prototype.getData = function () {
         return this.data;
-    }
+    };
     /**
      * Set the data for the clause by parsing natural language text.
      * @param {string} text  - the data for the clause
      */
-    parse(text) {
-        let parser = this.getTemplate().getParser();
+    Clause.prototype.parse = function (text) {
+        var parser = this.getTemplate().getParser();
         parser.feed(text);
         if (parser.results.length !== 1) {
-            const head = JSON.stringify(parser.results[0]);
+            var head_1 = JSON.stringify(parser.results[0]);
             parser.results.forEach(function (element) {
-                if (head !== JSON.stringify(element)) {
+                if (head_1 !== JSON.stringify(element)) {
                     throw new Error('Ambigious clause text. Got ' + parser.results.length + ' ASTs for text: ' + text);
                 }
             }, this);
         }
-        const ast = parser.results[0];
+        var ast = parser.results[0];
         logger.debug('Result of parsing: ' + ast);
         if (!ast) {
             throw new Error('Parsing clause text returned a null AST. This may mean the text is valid, but not complete.');
         }
         this.setData(ast);
-    }
+    };
     /**
      * Returns the identifier for this clause. The identifier is the identifier of
      * the template plus '-' plus a hash of the data for the clause (if set).
      * @return {String} the identifier of this clause
      */
-    getIdentifier() {
-        let hash = '';
+    Clause.prototype.getIdentifier = function () {
+        var hash = '';
         if (this.data) {
-            const textToHash = JSON.stringify(this.data);
-            const hasher = crypto.createHash('sha256');
+            var textToHash = JSON.stringify(this.data);
+            var hasher = crypto.createHash('sha256');
             hasher.update(textToHash);
             hash = '-' + hasher.digest('hex');
         }
         return this.getTemplate().getIdentifier() + hash;
-    }
+    };
     /**
      * Returns the template for this clause
      * @return {Template} the template for this clause
      */
-    getTemplate() {
+    Clause.prototype.getTemplate = function () {
         return this.template;
-    }
+    };
     /**
      * Returns a JSON representation of the clause
      * @return {object} the JS object for serialization
      */
-    toJSON() {
+    Clause.prototype.toJSON = function () {
         return {
             template: this.getTemplate().getIdentifier(),
             data: this.getData()
         };
-    }
-}
+    };
+    return Clause;
+}());
 module.exports = Clause;

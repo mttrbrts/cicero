@@ -12,33 +12,33 @@
  * limitations under the License.
  */
 'use strict';
-const Metadata = require('./metadata');
-const fs = require('fs');
-const fsPath = require('path');
-const JSZip = require('jszip');
-const minimatch = require('minimatch');
-const glob = require('glob');
-const xregexp = require('xregexp');
-const languageTagRegex = require('ietf-language-tag-regex');
-const Factory = require('composer-common').Factory;
-const RelationshipDeclaration = require('composer-common').RelationshipDeclaration;
-const Introspector = require('composer-common').Introspector;
-const ModelManager = require('composer-common').ModelManager;
-const ScriptManager = require('composer-common').ScriptManager;
-const Serializer = require('composer-common').Serializer;
-const Writer = require('composer-common').Writer;
-const logger = require('./logger');
-const nearley = require('nearley');
-const compile = require('nearley/lib/compile');
-const generate = require('nearley/lib/generate');
-const nearleyGrammar = require('nearley/lib/nearley-language-bootstrapped');
-const templateGrammar = require('./tdl.js');
-const GrammarVisitor = require('./grammarvisitor');
-const Jura = require('jura-compiler/lib/jura');
-const ENCODING = 'utf8';
+var Metadata = require('./metadata');
+var fs = require('fs');
+var fsPath = require('path');
+var JSZip = require('jszip');
+var minimatch = require('minimatch');
+var glob = require('glob');
+var xregexp = require('xregexp');
+var languageTagRegex = require('ietf-language-tag-regex');
+var Factory = require('composer-common').Factory;
+var RelationshipDeclaration = require('composer-common').RelationshipDeclaration;
+var Introspector = require('composer-common').Introspector;
+var ModelManager = require('composer-common').ModelManager;
+var ScriptManager = require('composer-common').ScriptManager;
+var Serializer = require('composer-common').Serializer;
+var Writer = require('composer-common').Writer;
+var logger = require('./logger');
+var nearley = require('nearley');
+var compile = require('nearley/lib/compile');
+var generate = require('nearley/lib/generate');
+var nearleyGrammar = require('nearley/lib/nearley-language-bootstrapped');
+var templateGrammar = require('./tdl.js');
+var GrammarVisitor = require('./grammarvisitor');
+var Jura = require('jura-compiler/lib/jura');
+var ENCODING = 'utf8';
 // Matches 'sample.txt' or 'sample_TAG.txt' where TAG is an IETF language tag (BCP 47)
-const IETF_REGEXP = languageTagRegex({ exact: false }).toString().slice(1, -2);
-const SAMPLE_FILE_REGEXP = xregexp('sample(_(' + IETF_REGEXP + '))?.txt$');
+var IETF_REGEXP = languageTagRegex({ exact: false }).toString().slice(1, -2);
+var SAMPLE_FILE_REGEXP = xregexp('sample(_(' + IETF_REGEXP + '))?.txt$');
 // This code is derived from BusinessNetworkDefinition in Hyperleger Composer composer-common.
 /**
  * A template for a legal clause. A Template has a template model, request/response transaction types,
@@ -48,7 +48,7 @@ const SAMPLE_FILE_REGEXP = xregexp('sample(_(' + IETF_REGEXP + '))?.txt$');
  * @public
  * @memberof module:cicero-core
  */
-class Template {
+var Template = /** @class */ (function () {
     /**
      * Create the Template.
      * Note: Only to be called by framework code. Applications should
@@ -57,7 +57,7 @@ class Template {
      * @param {String} readme  - the readme in markdown for the clause (optional)
      * @param {object} samples - the sample text for the template in different locales
      */
-    constructor(packageJson, readme, samples) {
+    function Template(packageJson, readme, samples) {
         this.modelManager = new ModelManager();
         this.scriptManager = new ScriptManager(this.modelManager);
         this.introspector = new Introspector(this.modelManager);
@@ -75,153 +75,136 @@ class Template {
      * @throws {Error} if no template model is found, or multiple template models are found
      * @returns {ClassDeclaration} the template model for the template
      */
-    getTemplateModel() {
-        const templateModels = this.getIntrospector().getClassDeclarations().filter((item) => {
-            const templateDecorator = item.getDecorator('AccordTemplateModel');
-            return (templateDecorator !== null && this.metadata.getName() === templateDecorator.getArguments()[0]);
+    Template.prototype.getTemplateModel = function () {
+        var _this = this;
+        var templateModels = this.getIntrospector().getClassDeclarations().filter(function (item) {
+            var templateDecorator = item.getDecorator('AccordTemplateModel');
+            return (templateDecorator !== null && _this.metadata.getName() === templateDecorator.getArguments()[0]);
         });
         if (templateModels.length > 1) {
-            throw new Error(`Found multiple concepts decorated with @AccordTemplateModel("${this.metadata.getName()}").`);
+            throw new Error("Found multiple concepts decorated with @AccordTemplateModel(\"" + this.metadata.getName() + "\").");
         }
         else if (templateModels.length === 0) {
-            throw new Error(`Failed to find the template model. Decorate a concept with @AccordTemplateModel("${this.metadata.getName()}").`);
+            throw new Error("Failed to find the template model. Decorate a concept with @AccordTemplateModel(\"" + this.metadata.getName() + "\").");
         }
         else {
             return templateModels[0];
         }
-    }
+    };
     /**
      * Returns the identifier for this clause
      * @return {String} the identifier of this clause
      */
-    getIdentifier() {
+    Template.prototype.getIdentifier = function () {
         return this.getMetadata().getIdentifier();
-    }
+    };
     /**
      * Returns the metadata for this clause
      * @return {kMetadata} the metadata for this clause
      */
-    getMetadata() {
+    Template.prototype.getMetadata = function () {
         return this.metadata;
-    }
+    };
     /**
      * Gets a parser object for this template
      * @return {object} the parser for this template
      */
-    getParser() {
+    Template.prototype.getParser = function () {
         if (!this.grammarAst) {
             throw new Error('Must call setGrammar or buildGrammar before calling getParser');
         }
         return new nearley.Parser(nearley.Grammar.fromCompiled(this.grammarAst));
-    }
+    };
     /**
      * Set the grammar for the template
      * @param {String} grammar  - the grammar for the template
      */
-    setGrammar(grammar) {
+    Template.prototype.setGrammar = function (grammar) {
         this.grammarAst = Template.compileGrammar(grammar);
         this.grammar = grammar;
-    }
+    };
     /**
      * Build a grammar from a template
      * @param {String} templatizedGrammar  - the annotated template
      */
-    buildGrammar(templatizedGrammar) {
+    Template.prototype.buildGrammar = function (templatizedGrammar) {
+        var _this = this;
         logger.debug('buildGrammar', templatizedGrammar);
-        const templateModel = this.getTemplateModel();
-        const parser = new nearley.Parser(nearley.Grammar.fromCompiled(templateGrammar));
+        var templateModel = this.getTemplateModel();
+        var parser = new nearley.Parser(nearley.Grammar.fromCompiled(templateGrammar));
         parser.feed(templatizedGrammar);
         if (parser.results.length !== 1) {
             throw new Error('Ambigious parse!');
         }
         // parse the template grammar
-        const ast = parser.results[0];
+        var ast = parser.results[0];
         logger.debug('Template AST', ast);
-        const writer = new Writer();
+        var writer = new Writer();
         writer.writeLine(0, '\n');
         writer.writeLine(0, '# Dynamically Generated');
         writer.writeLine(0, '@builtin "number.ne"');
         writer.writeLine(0, '@builtin "string.ne"');
         writer.writeLine(0, '@builtin "whitespace.ne"');
-        writer.writeLine(0, `@{%
-    function compact(v) {
-        if (Array.isArray(v)) {
-            return v.reduce((a, v) => (v === null || v === undefined || (v && v.length === 0) ) ? a : (a.push(v), a), []);
-        } else {
-            return v;
-        }
-    }
-
-    function flatten(v) {
-        let r;
-        if (Array.isArray(v)) {
-            r = v.reduce((a,v) => (a.push(...((v && Array.isArray(v)) ? flatten(v) : [v])), a), []);
-        } else {
-            r = v;
-        }
-        r = compact(r);
-        return r;
-        }
-%}`);
+        writer.writeLine(0, "@{%\n    function compact(v) {\n        if (Array.isArray(v)) {\n            return v.reduce((a, v) => (v === null || v === undefined || (v && v.length === 0) ) ? a : (a.push(v), a), []);\n        } else {\n            return v;\n        }\n    }\n\n    function flatten(v) {\n        let r;\n        if (Array.isArray(v)) {\n            r = v.reduce((a,v) => (a.push(...((v && Array.isArray(v)) ? flatten(v) : [v])), a), []);\n        } else {\n            r = v;\n        }\n        r = compact(r);\n        return r;\n        }\n%}");
         writer.writeLine(0, '\n');
         // index all rules
-        const rules = {};
-        ast.data.forEach((element, index) => {
+        var rules = {};
+        ast.data.forEach(function (element, index) {
             // ignore empty chunks (issue #1) and missing optional last chunks
             if (element && (element.type !== 'Chunk' || element.value.length > 0)) {
-                logger.debug(`element C${index} ${JSON.stringify(element)}`);
+                logger.debug("element C" + index + " " + JSON.stringify(element));
                 rules['C' + index] = element;
             }
         }, this);
         // create the root rule
         writer.write('ROOT -> ');
-        for (let rule in rules) {
-            writer.write(`${rule} `);
+        for (var rule in rules) {
+            writer.write(rule + " ");
         }
         writer.write('\n');
         writer.writeLine(0, '{%');
-        writer.writeLine(0, `([${Object.keys(rules)}]) => {`);
+        writer.writeLine(0, "([" + Object.keys(rules) + "]) => {");
         writer.writeLine(1, 'return {');
-        writer.writeLine(3, `$class : "${templateModel.getFullyQualifiedName()}",`);
-        templateModel.getProperties().forEach((property, index) => {
-            const sep = index < templateModel.getProperties().length - 1 ? ',' : '';
-            const bindingIndex = this.findFirstBinding(property.getName(), ast.data);
+        writer.writeLine(3, "$class : \"" + templateModel.getFullyQualifiedName() + "\",");
+        templateModel.getProperties().forEach(function (property, index) {
+            var sep = index < templateModel.getProperties().length - 1 ? ',' : '';
+            var bindingIndex = _this.findFirstBinding(property.getName(), ast.data);
             if (bindingIndex !== -1) { // ignore things like transactionId
                 // TODO (DCS) add !==null check for BooleanBinding
-                writer.writeLine(3, `${property.getName()} : C${bindingIndex}${sep}`);
+                writer.writeLine(3, property.getName() + " : C" + bindingIndex + sep);
             }
         });
         writer.writeLine(1, '};');
         writer.writeLine(0, '}');
         writer.writeLine(0, '%}\n');
         // now we create each subordinate rule in turn
-        let dynamicGrammar = '';
-        for (let rule in rules) {
-            const element = rules[rule];
+        var dynamicGrammar = '';
+        for (var rule in rules) {
+            var element = rules[rule];
             dynamicGrammar += '\n';
-            dynamicGrammar += `${rule} -> `;
+            dynamicGrammar += rule + " -> ";
             switch (element.type) {
                 case 'Chunk':
                 case 'LastChunk':
                     dynamicGrammar += this.cleanChunk(element.value);
                     break;
                 case 'BooleanBinding':
-                    dynamicGrammar += `${element.string.value}:? {% (d) => {return d[0] !== null;}%} # ${element.fieldName.value}`;
+                    dynamicGrammar += element.string.value + ":? {% (d) => {return d[0] !== null;}%} # " + element.fieldName.value;
                     break;
                 case 'Binding':
                     {
-                        const propertyName = element.fieldName.value;
-                        const property = templateModel.getProperty(propertyName);
+                        var propertyName = element.fieldName.value;
+                        var property = templateModel.getProperty(propertyName);
                         if (!property) {
-                            throw new Error(`Template references a property '${propertyName}' that is not declared in the template model '${templateModel.getFullyQualifiedName()}'. Details: ${JSON.stringify(element)}`);
+                            throw new Error("Template references a property '" + propertyName + "' that is not declared in the template model '" + templateModel.getFullyQualifiedName() + "'. Details: " + JSON.stringify(element));
                         }
-                        let type = property.getType();
+                        var type = property.getType();
                         // relationships need to be transformed into strings
                         if (property instanceof RelationshipDeclaration) {
                             type = 'String';
                         }
-                        let action = '{% id %}';
-                        const decorator = property.getDecorator('AccordType');
+                        var action = '{% id %}';
+                        var decorator = property.getDecorator('AccordType');
                         if (decorator) {
                             if (decorator.getArguments().length > 0) {
                                 type = decorator.getArguments()[0];
@@ -230,7 +213,7 @@ class Template {
                                 action = decorator.getArguments()[1];
                             }
                         }
-                        let suffix = ':';
+                        var suffix = ':';
                         // TODO (DCS) need a serialization for arrays
                         if (property.isArray()) {
                             throw new Error('Arrays are not yet supported!');
@@ -242,26 +225,26 @@ class Template {
                         if (suffix === ':') {
                             suffix = '';
                         }
-                        dynamicGrammar += `${type}${suffix} ${action} # ${propertyName}`;
+                        dynamicGrammar += "" + type + suffix + " " + action + " # " + propertyName;
                     }
                     break;
                 default:
-                    throw new Error(`Unrecognized type ${element.type}`);
+                    throw new Error("Unrecognized type " + element.type);
             }
         }
         writer.writeLine(0, dynamicGrammar);
         writer.writeLine(0, '\n');
         // add the grammar for the model
-        const parameters = {
+        var parameters = {
             writer: writer
         };
-        const gv = new GrammarVisitor();
+        var gv = new GrammarVisitor();
         this.getModelManager().accept(gv, parameters);
-        const combined = parameters.writer.getBuffer();
+        var combined = parameters.writer.getBuffer();
         logger.debug('Generated template grammar' + combined);
         this.setGrammar(combined);
         this.templatizedGrammar = templatizedGrammar;
-    }
+    };
     /**
      * Cleans a chunk of text to make it safe to include
      * as a grammar rule. We need to remove linefeeds and
@@ -270,13 +253,13 @@ class Template {
      * @param {string} input - the input text from the template
      * @return {string} cleaned text
      */
-    cleanChunk(input) {
+    Template.prototype.cleanChunk = function (input) {
         // we replace all \r and \n with \n
-        let text = input.replace(/\r?\n|\r/gm, '\\n');
+        var text = input.replace(/\r?\n|\r/gm, '\\n');
         // replace all " with \", even across newlines
         text = text.replace(/"/gm, '\\"');
-        return `"${text}"`;
-    }
+        return "\"" + text + "\"";
+    };
     /**
      * Finds the first binding for the given property
      *
@@ -284,9 +267,9 @@ class Template {
      * @param {object[]} elements the result of parsing the template_txt.
      * @return {int} the index of the element or -1
      */
-    findFirstBinding(propertyName, elements) {
-        for (let n = 0; n < elements.length; n++) {
-            const element = elements[n];
+    Template.prototype.findFirstBinding = function (propertyName, elements) {
+        for (var n = 0; n < elements.length; n++) {
+            var element = elements[n];
             if (element.type === 'Binding' || element.type === 'BooleanBinding') {
                 if (element.fieldName.value === propertyName) {
                     return n;
@@ -294,103 +277,103 @@ class Template {
             }
         }
         return -1;
-    }
+    };
     /**
      * Get the grammar for the template
      * @return {String} - the grammar for the template
      */
-    getGrammar() {
+    Template.prototype.getGrammar = function () {
         return this.grammar;
-    }
+    };
     /**
      * Returns the name for this clause
      * @return {String} the name of this clause
      */
-    getName() {
+    Template.prototype.getName = function () {
         return this.getMetadata().getName();
-    }
+    };
     /**
      * Returns the version for this clause
      * @return {String} the version of this clause. Use semver module
      * to parse.
      */
-    getVersion() {
+    Template.prototype.getVersion = function () {
         return this.getMetadata().getVersion();
-    }
+    };
     /**
      * Returns the description for this clause
      * @return {String} the description of this clause
      */
-    getDescription() {
+    Template.prototype.getDescription = function () {
         return this.getMetadata().getDescription();
-    }
+    };
     /**
      * Compiles a Nearley grammar to its AST
      * @param {string} sourceCode  - the source text for the grammar
      * @return {object} the AST for the grammar
      */
-    static compileGrammar(sourceCode) {
+    Template.compileGrammar = function (sourceCode) {
         try {
             // Parse the grammar source into an AST
-            const grammarParser = new nearley.Parser(nearleyGrammar);
+            var grammarParser = new nearley.Parser(nearleyGrammar);
             grammarParser.feed(sourceCode);
-            const grammarAst = grammarParser.results[0]; // TODO check for errors
+            var grammarAst = grammarParser.results[0]; // TODO check for errors
             // Compile the AST into a set of rules
-            const grammarInfoObject = compile(grammarAst, {});
+            var grammarInfoObject = compile(grammarAst, {});
             // Generate JavaScript code from the rules
-            const grammarJs = generate(grammarInfoObject, 'grammar');
+            var grammarJs = generate(grammarInfoObject, 'grammar');
             // Pretend this is a CommonJS environment to catch exports from the grammar.
-            const module = {
+            var module_1 = {
                 exports: {}
             };
             eval(grammarJs);
-            return module.exports;
+            return module_1.exports;
         }
         catch (err) {
             logger.error(err);
             throw err;
         }
-    }
+    };
     /**
      * Create a Clause from an archive.
      * @param {Buffer} Buffer  - the Buffer to a zip archive
      * @return {Promise} a Promise to the instantiated business network
      */
-    static fromArchive(Buffer) {
-        const method = 'fromArchive';
+    Template.fromArchive = function (Buffer) {
+        var method = 'fromArchive';
         logger.entry(method, Buffer.length);
         return JSZip.loadAsync(Buffer).then(function (zip) {
-            let promise = Promise.resolve();
-            let ctoModelFiles = [];
-            let ctoModelFileNames = [];
-            let jsScriptFiles = [];
-            let juraScriptFiles = [];
-            let sampleTextFiles = {};
-            let template;
-            let readmeContents = null;
-            let packageJsonContents = null;
-            let grammar = null;
-            let templatizedGrammar = null;
+            var promise = Promise.resolve();
+            var ctoModelFiles = [];
+            var ctoModelFileNames = [];
+            var jsScriptFiles = [];
+            var juraScriptFiles = [];
+            var sampleTextFiles = {};
+            var template;
+            var readmeContents = null;
+            var packageJsonContents = null;
+            var grammar = null;
+            var templatizedGrammar = null;
             logger.debug(method, 'Loading README.md');
-            let readme = zip.file('README.md');
+            var readme = zip.file('README.md');
             if (readme) {
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return readme.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded README.md');
                     readmeContents = contents;
                 });
             }
             logger.debug(method, 'Looking for sample files');
-            let sampleFiles = zip.file(SAMPLE_FILE_REGEXP);
+            var sampleFiles = zip.file(SAMPLE_FILE_REGEXP);
             sampleFiles.forEach(function (file) {
                 logger.debug(method, 'Found sample file, loading it', file);
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return file.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded sample file');
-                    let matches = file.name.match(SAMPLE_FILE_REGEXP);
-                    let locale = 'default';
+                    var matches = file.name.match(SAMPLE_FILE_REGEXP);
+                    var locale = 'default';
                     // Locale match found
                     if (matches !== null && matches[2]) {
                         locale = matches[2];
@@ -400,60 +383,60 @@ class Template {
                 });
             });
             logger.debug(method, 'Loading package.json');
-            let packageJson = zip.file('package.json');
+            var packageJson = zip.file('package.json');
             if (packageJson === null) {
                 throw Error('package.json must exist');
             }
-            promise = promise.then(() => {
+            promise = promise.then(function () {
                 return packageJson.async('string');
-            }).then((contents) => {
+            }).then(function (contents) {
                 logger.debug(method, 'Loaded package.json');
                 packageJsonContents = JSON.parse(contents);
             });
             logger.debug(method, 'Loading grammar.ne');
-            let grammarNe = zip.file('grammar/grammar.ne');
+            var grammarNe = zip.file('grammar/grammar.ne');
             if (grammarNe !== null) {
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return grammarNe.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded grammar.ne');
                     grammar = contents;
                 });
             }
             else {
                 logger.debug(method, 'Loading template.tem');
-                let template_txt = zip.file('grammar/template.tem');
-                if (template_txt === null) {
+                var template_txt_1 = zip.file('grammar/template.tem');
+                if (template_txt_1 === null) {
                     throw new Error('Failed to find grammar or template.');
                 }
-                promise = promise.then(() => {
-                    return template_txt.async('string');
-                }).then((contents) => {
+                promise = promise.then(function () {
+                    return template_txt_1.async('string');
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded template.tem');
                     templatizedGrammar = contents;
                 });
             }
             logger.debug(method, 'Looking for model files');
-            let ctoFiles = zip.file(/models\/.*\.cto$/); //Matches any file which is in the 'models' folder and has a .cto extension
+            var ctoFiles = zip.file(/models\/.*\.cto$/); //Matches any file which is in the 'models' folder and has a .cto extension
             ctoFiles.forEach(function (file) {
                 logger.debug(method, 'Found model file, loading it', file.name);
                 ctoModelFileNames.push(file.name);
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return file.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded model file');
                     ctoModelFiles.push(contents);
                 });
             });
             logger.debug(method, 'Looking for JavaScript files');
-            let jsFiles = zip.file(/lib\/.*\.js$/); //Matches any file which is in the 'lib' folder and has a .js extension
+            var jsFiles = zip.file(/lib\/.*\.js$/); //Matches any file which is in the 'lib' folder and has a .js extension
             jsFiles.forEach(function (file) {
                 logger.debug(method, 'Found JavaScript file, loading it', file.name);
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return file.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded JavaScript file');
-                    let tempObj = {
+                    var tempObj = {
                         'name': file.name,
                         'contents': contents
                     };
@@ -461,21 +444,21 @@ class Template {
                 });
             });
             logger.debug(method, 'Looking for Jura files');
-            let juraFiles = zip.file(/lib\/.*\.jura$/); //Matches any file which is in the 'lib' folder and has a .jura extension
+            var juraFiles = zip.file(/lib\/.*\.jura$/); //Matches any file which is in the 'lib' folder and has a .jura extension
             juraFiles.forEach(function (file) {
                 logger.debug(method, 'Found Jura file, loading it', file.name);
-                promise = promise.then(() => {
+                promise = promise.then(function () {
                     return file.async('string');
-                }).then((contents) => {
+                }).then(function (contents) {
                     logger.debug(method, 'Loaded Jura file');
-                    let tempObj = {
+                    var tempObj = {
                         'name': file.name,
                         'contents': contents
                     };
                     juraScriptFiles.push(tempObj);
                 });
             });
-            return promise.then(() => {
+            return promise.then(function () {
                 logger.debug(method, 'Loaded package.json');
                 template = new Template(packageJsonContents, readmeContents, sampleTextFiles);
                 logger.debug(method, 'Adding model files to model manager');
@@ -483,12 +466,12 @@ class Template {
                 logger.debug(method, 'Added model files to model manager');
                 logger.debug(method, 'Adding JavaScript files to script manager');
                 jsScriptFiles.forEach(function (obj) {
-                    let jsObject = template.scriptManager.createScript(obj.name, 'js', obj.contents);
+                    var jsObject = template.scriptManager.createScript(obj.name, 'js', obj.contents);
                     template.scriptManager.addScript(jsObject); // Adds all js files to script manager
                 });
                 logger.debug(method, 'Added JavaScript files to script manager');
                 juraScriptFiles.forEach(function (obj) {
-                    let juraObject = template.scriptManager.createScript(obj.name, 'jura', obj.contents);
+                    var juraObject = template.scriptManager.createScript(obj.name, 'jura', obj.contents);
                     template.scriptManager.addScript(juraObject); // Adds all jura files to script manager
                 });
                 logger.debug(method, 'Added Jura files to script manager');
@@ -505,15 +488,15 @@ class Template {
                 return template; // Returns template
             });
         });
-    }
+    };
     /**
      * Store a Template as an archive.
      * @param {Object} [options]  - JSZip options
      * @return {Buffer} buffer  - the zlib buffer
      */
-    toArchive(options) {
-        let zip = new JSZip();
-        let packageFileContents = JSON.stringify(this.getMetadata().getPackageJson());
+    Template.prototype.toArchive = function (options) {
+        var zip = new JSZip();
+        var packageFileContents = JSON.stringify(this.getMetadata().getPackageJson());
         zip.file('package.json', packageFileContents, options);
         // save the grammar
         zip.file('grammar/', null, Object.assign({}, options, {
@@ -530,26 +513,26 @@ class Template {
             zip.file('README.md', this.getMetadata().getREADME(), options);
         }
         // Save the sample files
-        const sampleFiles = this.getMetadata().getSamples();
+        var sampleFiles = this.getMetadata().getSamples();
         if (sampleFiles) {
             Object.keys(sampleFiles).forEach(function (locale) {
-                let fileName;
+                var fileName;
                 if (locale === 'default') {
                     fileName = 'sample.txt';
                 }
                 else {
-                    fileName = `sample_${locale}.txt`;
+                    fileName = "sample_" + locale + ".txt";
                 }
                 zip.file(fileName, sampleFiles[locale], options);
             });
         }
-        let modelManager = this.getModelManager();
-        let modelFiles = modelManager.getModelFiles();
+        var modelManager = this.getModelManager();
+        var modelFiles = modelManager.getModelFiles();
         zip.file('models/', null, Object.assign({}, options, {
             dir: true
         }));
         modelFiles.forEach(function (file) {
-            let fileName;
+            var fileName;
             // ignore the system namespace when creating an archive
             if (file.isSystemModelFile()) {
                 return;
@@ -558,29 +541,29 @@ class Template {
                 fileName = file.namespace + '.cto';
             }
             else {
-                let fileIdentifier = file.fileName;
+                var fileIdentifier = file.fileName;
                 fileName = fsPath.basename(fileIdentifier);
             }
             zip.file('models/' + fileName, file.definitions, options);
         });
-        let scriptManager = this.getScriptManager();
-        let scriptFiles = scriptManager.getScripts();
+        var scriptManager = this.getScriptManager();
+        var scriptFiles = scriptManager.getScripts();
         zip.file('lib/', null, Object.assign({}, options, {
             dir: true
         }));
         scriptFiles.forEach(function (file) {
-            let fileIdentifier = file.identifier;
-            let fileName = fsPath.basename(fileIdentifier);
+            var fileIdentifier = file.identifier;
+            var fileName = fsPath.basename(fileIdentifier);
             zip.file('lib/' + fileName, file.contents, options);
         });
         return zip.generateAsync({
             type: 'nodebuffer'
-        }).then(something => {
-            return Promise.resolve(something).then(result => {
+        }).then(function (something) {
+            return Promise.resolve(something).then(function (result) {
                 return result;
             });
         });
-    }
+    };
     /**
      * Builds a Template from the contents of a directory.
      * The directory must include a package.json in the root (used to specify
@@ -622,7 +605,7 @@ class Template {
      * the script files to include. Defaults to **\/lib/**\/*.+(js|jura)
      * @return {Promise} a Promise to the instantiated business network
      */
-    static fromDirectory(path, options) {
+    Template.fromDirectory = function (path, options) {
         if (!options) {
             options = {};
         }
@@ -635,11 +618,11 @@ class Template {
         if (!options.scriptGlob) {
             options.scriptGlob = '**/lib/**/*.+(js|jura)';
         }
-        const method = 'fromDirectory';
+        var method = 'fromDirectory';
         logger.entry(method, path);
         // grab the README.md
-        let readmeContents = null;
-        const readmePath = fsPath.resolve(path, 'README.md');
+        var readmeContents = null;
+        var readmePath = fsPath.resolve(path, 'README.md');
         if (fs.existsSync(readmePath)) {
             readmeContents = fs.readFileSync(readmePath, ENCODING);
             if (readmeContents) {
@@ -647,28 +630,28 @@ class Template {
             }
         }
         // grab the package.json
-        const packageJsonPath = fsPath.resolve(path, 'package.json');
+        var packageJsonPath = fsPath.resolve(path, 'package.json');
         if (!fs.existsSync(packageJsonPath)) {
             throw new Error('Failed to find package.json');
         }
-        let packageJsonContents = fs.readFileSync(packageJsonPath, ENCODING);
+        var packageJsonContents = fs.readFileSync(packageJsonPath, ENCODING);
         logger.debug(method, 'Loaded package.json', packageJsonContents);
         logger.debug(method, 'Looking for sample files');
-        let sampleTextFiles = {};
-        let sampleFiles = glob.sync('@(sample.txt|sample_*.txt)', { cwd: fsPath.resolve(path) });
+        var sampleTextFiles = {};
+        var sampleFiles = glob.sync('@(sample.txt|sample_*.txt)', { cwd: fsPath.resolve(path) });
         if (sampleFiles.length === 0) {
             throw new Error('Failed to find any sample files. e.g. sample.txt, sample_fr.txt');
         }
         sampleFiles.forEach(function (file) {
-            const matches = file.match(SAMPLE_FILE_REGEXP);
+            var matches = file.match(SAMPLE_FILE_REGEXP);
             if (file !== 'sample.txt' && matches === null) {
                 throw new Error('Invalid locale used in sample file, ' + file + '. Locales should be IETF language tags, e.g. sample_fr.txt');
             }
             logger.debug(method, 'Found sample file, loading it: ' + file);
-            const sampleFilePath = fsPath.resolve(path, file);
-            const sampleFileContents = fs.readFileSync(sampleFilePath, ENCODING);
+            var sampleFilePath = fsPath.resolve(path, file);
+            var sampleFileContents = fs.readFileSync(sampleFilePath, ENCODING);
             logger.debug(method, 'Loaded ' + file, sampleFileContents);
-            let locale = 'default';
+            var locale = 'default';
             // Match found
             if (matches !== null && matches[2]) {
                 locale = matches[2];
@@ -677,20 +660,20 @@ class Template {
             sampleTextFiles[locale] = sampleFileContents;
         });
         // parse the package.json
-        let jsonObject = JSON.parse(packageJsonContents);
+        var jsonObject = JSON.parse(packageJsonContents);
         // create the template
-        const template = new Template(jsonObject, readmeContents, sampleTextFiles);
-        const modelFiles = [];
-        const modelFileNames = [];
+        var template = new Template(jsonObject, readmeContents, sampleTextFiles);
+        var modelFiles = [];
+        var modelFileNames = [];
         // define a help function that will filter out files
         // that are inside a node_modules directory under the path
         // we are processing
-        const isFileInNodeModuleDir = function (file, basePath) {
-            const method = 'isFileInNodeModuleDir';
-            let filePath = fsPath.parse(file);
+        var isFileInNodeModuleDir = function (file, basePath) {
+            var method = 'isFileInNodeModuleDir';
+            var filePath = fsPath.parse(file);
             basePath = fsPath.resolve(basePath);
-            let subPath = fsPath.resolve(filePath.dir).substring(basePath.length);
-            let result = subPath.split(fsPath.sep).some((element) => {
+            var subPath = fsPath.resolve(filePath.dir).substring(basePath.length);
+            var result = subPath.split(fsPath.sep).some(function (element) {
                 return element === 'node_modules';
             });
             logger.debug(method, file, result);
@@ -713,10 +696,10 @@ class Template {
             }
         });
         template.getModelManager().addModelFiles(modelFiles, modelFileNames, true);
-        return template.getModelManager().updateExternalModels().then(() => {
+        return template.getModelManager().updateExternalModels().then(function () {
             logger.debug(method, 'Added model files', modelFiles.length);
             // find script files outside the npm install directory
-            const scriptFiles = [];
+            var scriptFiles = [];
             Template.processDirectory(path, {
                 accepts: function (file) {
                     return isFileInNodeModuleDir(file, path) === false && minimatch(file, options.scriptGlob, {
@@ -727,12 +710,12 @@ class Template {
                     return !isFileInNodeModuleDir(dir, path);
                 },
                 process: function (path, contents) {
-                    let filePath = fsPath.parse(path);
+                    var filePath = fsPath.parse(path);
                     if (filePath.ext.toLowerCase() === '.jura') {
                         logger.debug(method, 'Compiling Jura to JavaScript ', path);
                         contents = Jura.compileToJavaScript(contents, null, null, true);
                     }
-                    const jsScript = template.getScriptManager().createScript(path, filePath.ext.toLowerCase(), contents);
+                    var jsScript = template.getScriptManager().createScript(path, filePath.ext.toLowerCase(), contents);
                     scriptFiles.push(jsScript);
                     logger.debug(method, 'Found script file ', path);
                 }
@@ -740,14 +723,15 @@ class Template {
             if (modelFiles.length === 0) {
                 throw new Error('Failed to find a model file.');
             }
-            for (let script of scriptFiles) {
+            for (var _i = 0, scriptFiles_1 = scriptFiles; _i < scriptFiles_1.length; _i++) {
+                var script = scriptFiles_1[_i];
                 template.getScriptManager().addScript(script);
             }
             logger.debug(method, 'Added script files', scriptFiles.length);
             // check the template model
             template.getTemplateModel();
             // grab the grammar
-            let grammarNe = null;
+            var grammarNe = null;
             try {
                 grammarNe = fs.readFileSync(fsPath.resolve(path, 'grammar/grammar.ne'), ENCODING);
             }
@@ -755,7 +739,7 @@ class Template {
                 // ignore
             }
             if (!grammarNe) {
-                let template_txt = fs.readFileSync(fsPath.resolve(path, 'grammar/template.tem'), ENCODING);
+                var template_txt = fs.readFileSync(fsPath.resolve(path, 'grammar/template.tem'), ENCODING);
                 template.buildGrammar(template_txt);
                 logger.debug(method, 'Loaded template.tem', template_txt);
             }
@@ -766,37 +750,37 @@ class Template {
             logger.exit(method, path);
             return Promise.resolve(template);
         });
-    }
+    };
     /**
      * @param {String} path - the path to process
      * @param {Object} fileProcessor - the file processor. It must have
      * accept and process methods.
      * @private
      */
-    static processDirectory(path, fileProcessor) {
-        const items = Template.walkSync(path, [], fileProcessor);
+    Template.processDirectory = function (path, fileProcessor) {
+        var items = Template.walkSync(path, [], fileProcessor);
         items.sort();
         logger.debug('processDirectory', 'Path ' + path, items);
-        items.forEach((item) => {
+        items.forEach(function (item) {
             Template.processFile(item, fileProcessor);
         });
-    }
+    };
     /**
      * @param {String} file - the file to process
      * @param {Object} fileProcessor - the file processor. It must have
      * accepts and process methods.
      * @private
      */
-    static processFile(file, fileProcessor) {
+    Template.processFile = function (file, fileProcessor) {
         if (fileProcessor.accepts(file)) {
             logger.debug('processFile', 'FileProcessor accepted', file);
-            let fileContents = fs.readFileSync(file, ENCODING);
+            var fileContents = fs.readFileSync(file, ENCODING);
             fileProcessor.process(file, fileContents);
         }
         else {
             logger.debug('processFile', 'FileProcessor rejected', file);
         }
-    }
+    };
     /**
      * @param {String} dir - the dir to walk
      * @param {Object[]} filelist - input files
@@ -805,10 +789,10 @@ class Template {
      * @return {Object[]} filelist - output files
      * @private
      */
-    static walkSync(dir, filelist, fileProcessor) {
-        let files = fs.readdirSync(dir);
+    Template.walkSync = function (dir, filelist, fileProcessor) {
+        var files = fs.readdirSync(dir);
         files.forEach(function (file) {
-            let nestedPath = fsPath.join(dir, file);
+            var nestedPath = fsPath.join(dir, file);
             if (fs.lstatSync(nestedPath).isDirectory()) {
                 if (fileProcessor.acceptsDir(nestedPath)) {
                     filelist = Template.walkSync(nestedPath, filelist, fileProcessor);
@@ -819,7 +803,7 @@ class Template {
             }
         });
         return filelist;
-    }
+    };
     /**
      * Visitor design pattern
      * @param {Object} visitor - the visitor
@@ -827,139 +811,140 @@ class Template {
      * @return {Object} the result of visiting or null
      * @private
      */
-    accept(visitor, parameters) {
+    Template.prototype.accept = function (visitor, parameters) {
         return visitor.visit(this, parameters);
-    }
+    };
     /**
      * Provides access to the Introspector for this business network. The Introspector
      * is used to reflect on the types defined within this business network.
      * @return {Introspector} the Introspector for this business network
      */
-    getIntrospector() {
+    Template.prototype.getIntrospector = function () {
         return this.introspector;
-    }
+    };
     /**
      * Provides access to the Factory for this business network. The Factory
      * is used to create the types defined in this business network.
      * @return {Factory} the Factory for this business network
      */
-    getFactory() {
+    Template.prototype.getFactory = function () {
         return this.factory;
-    }
+    };
     /**
      * Provides access to the Serializer for this business network. The Serializer
      * is used to serialize instances of the types defined within this business network.
      * @return {Serializer} the Serializer for this business network
      */
-    getSerializer() {
+    Template.prototype.getSerializer = function () {
         return this.serializer;
-    }
+    };
     /**
      * Provides access to the ScriptManager for this business network. The ScriptManager
      * manage access to the scripts that have been defined within this business network.
      * @return {ScriptManager} the ScriptManager for this business network
      * @private
      */
-    getScriptManager() {
+    Template.prototype.getScriptManager = function () {
         return this.scriptManager;
-    }
+    };
     /**
      * Provides access to the ModelManager for this business network. The ModelManager
      * manage access to the models that have been defined within this business network.
      * @return {ModelManager} the ModelManager for this business network
      * @private
      */
-    getModelManager() {
+    Template.prototype.getModelManager = function () {
         return this.modelManager;
-    }
+    };
     /**
      * Set the samples within the Metadata
      * @param {object} samples the samples for the tempalte
      * @private
      */
-    setSamples(samples) {
+    Template.prototype.setSamples = function (samples) {
         this.metadata = new Metadata(this.metadata.getPackageJson(), this.metadata.getREADME(), samples);
-    }
+    };
     /**
      * Set a locale-specified sample within the Metadata
      * @param {object} sample the samples for the template
      * @param {string} locale the IETF Language Tag (BCP 47) for the language
      * @private
      */
-    setSample(sample, locale) {
-        const samples = this.metadata.getSamples();
+    Template.prototype.setSample = function (sample, locale) {
+        var samples = this.metadata.getSamples();
         samples[locale] = sample;
         this.metadata = new Metadata(this.metadata.getPackageJson(), this.metadata.getREADME(), samples);
-    }
+    };
     /**
      * Set the readme file within the Metadata
      * @param {String} readme the readme in markdown for the business network
      * @private
      */
-    setReadme(readme) {
+    Template.prototype.setReadme = function (readme) {
         this.metadata = new Metadata(this.metadata.getPackageJson(), readme, this.metadata.getSamples());
-    }
+    };
     /**
      * Set the packageJson within the Metadata
      * @param {object} packageJson the JS object for package.json
      * @private
      */
-    setPackageJson(packageJson) {
+    Template.prototype.setPackageJson = function (packageJson) {
         this.metadata = new Metadata(packageJson, this.metadata.getREADME(), this.metadata.getSamples());
-    }
+    };
     /**
      * Provides a list of the input types that are accepted by this Template. Types use the fully-qualified form.
      * @return {Array} a list of the request types
      */
-    getRequestTypes() {
+    Template.prototype.getRequestTypes = function () {
         // get the function declarations of all functions
         // that have the @clause annotation
-        const functionDeclarations = this.getScriptManager().getScripts().map((ele) => {
+        var functionDeclarations = this.getScriptManager().getScripts().map(function (ele) {
             return ele.getFunctionDeclarations();
         })
-            .reduce((flat, next) => {
+            .reduce(function (flat, next) {
             return flat.concat(next);
         })
-            .filter((ele) => {
+            .filter(function (ele) {
             return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
-        }).map((ele) => {
+        }).map(function (ele) {
             return ele;
         });
         if (functionDeclarations.length === 0) {
             throw new Error('Did not find any function declarations with the @AccordClauseLogic annotation');
         }
-        let types = [];
-        functionDeclarations.forEach((ele, n) => {
+        var types = [];
+        functionDeclarations.forEach(function (ele, n) {
             types.push(ele.getParameterTypes()[1]);
         });
         logger.debug(types);
         return types;
-    }
+    };
     /**
      * Provides a list of the return types that of this Template. Types use the fully-qualified form.
      * @return {Array} a list of the response types
      */
-    getResponseTypes() {
-        const functionDeclarations = this.getScriptManager().getScripts().map((ele) => {
+    Template.prototype.getResponseTypes = function () {
+        var functionDeclarations = this.getScriptManager().getScripts().map(function (ele) {
             return ele.getFunctionDeclarations();
         })
-            .reduce((flat, next) => {
+            .reduce(function (flat, next) {
             return flat.concat(next);
         })
-            .filter((ele) => {
+            .filter(function (ele) {
             return ele.getDecorators().indexOf('AccordClauseLogic') >= 0;
-        }).map((ele) => {
+        }).map(function (ele) {
             return ele;
         });
         if (functionDeclarations.length === 0) {
             throw new Error('Did not find any function declarations with the @AccordClauseLogic annotation');
         }
-        let types = [];
-        functionDeclarations.forEach((ele, n) => {
+        var types = [];
+        functionDeclarations.forEach(function (ele, n) {
             types.push(ele.getParameterTypes()[2]);
         });
         logger.debug(types);
         return types;
-    }
-}
+    };
+    return Template;
+}());
 module.exports = Template;

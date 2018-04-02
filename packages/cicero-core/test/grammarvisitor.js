@@ -16,9 +16,9 @@
 
 const ModelManager = require('composer-common').ModelManager;
 const Writer = require('composer-common').Writer;
-const GrammarVisitor = require('../lib/grammarvisitor');
-const Template = require('../lib/template');
-const logger = require('../lib/logger');
+const GrammarVisitor = require('../src/grammarvisitor');
+const Template = require('../src/template');
+const logger = require('../src/logger');
 
 const fs = require('fs');
 const path = require('path');

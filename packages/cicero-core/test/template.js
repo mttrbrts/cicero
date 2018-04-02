@@ -14,7 +14,7 @@
 
 'use strict';
 
-const Template = require('../lib/template');
+const Template = require('../src/template');
 const nearley = require('nearley');
 
 const chai = require('chai');

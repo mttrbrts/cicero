@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 'use strict';
-const logger = require('cicero-core').logger;
+var logger = require('cicero-core').logger;
 /**
  * <p>
  * A logger class, exposed to logic
@@ -20,36 +20,37 @@ const logger = require('cicero-core').logger;
  * @public
  * @memberof module:cicero-engine
  */
-class Logger {
+var Logger = /** @class */ (function () {
     /**
      * Create the Logger.
      * @param {Serializer} serializer - the composer serializer to use to convert objects to JSON
      */
-    constructor(serializer) {
+    function Logger(serializer) {
         this.serializer = serializer;
     }
     /**
      * Log an info level message
      * @param {object} obj - the object to log
      */
-    info(obj) {
+    Logger.prototype.info = function (obj) {
         if (typeof obj === 'object') {
-            let printable = {};
-            const keys = Object.keys(obj);
+            var printable_1 = {};
+            var keys = Object.keys(obj);
             keys.forEach(function (key) {
-                let element = obj[key];
+                var element = obj[key];
                 if (element.getType) {
-                    printable[key] = this.serializer.toJSON(element, { validate: false, permitResourcesForRelationships: true });
+                    printable_1[key] = this.serializer.toJSON(element, { validate: false, permitResourcesForRelationships: true });
                 }
                 else {
-                    printable[key] = element;
+                    printable_1[key] = element;
                 }
             }, this);
-            logger.info('CICERO-ENGINE', JSON.stringify(printable));
+            logger.info('CICERO-ENGINE', JSON.stringify(printable_1));
         }
         else {
             logger.info('CICERO-ENGINE', obj);
         }
-    }
-}
+    };
+    return Logger;
+}());
 module.exports = Logger;

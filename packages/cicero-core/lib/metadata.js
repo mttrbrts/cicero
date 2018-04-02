@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 'use strict';
-const logger = require('./logger');
+var logger = require('./logger');
 // This code is derived from BusinessNetworkMetadata in Hyperleger Composer composer-common.
 /**
  * Defines the metadata for a Template, including the name, version, README markdown.
@@ -20,7 +20,7 @@ const logger = require('./logger');
  * @public
  * @memberof module:cicero-core
  */
-class Metadata {
+var Metadata = /** @class */ (function () {
     /**
      * Create the Metadata.
      * <p>
@@ -40,8 +40,8 @@ class Metadata {
      * Locale keys (with the exception of default) conform to the IETF Language Tag specification (BCP 47).
      * THe `default` key represents sample template text in a non-specified language, stored in a file called `sample.txt`.
      */
-    constructor(packageJson, readme, samples) {
-        const method = 'constructor';
+    function Metadata(packageJson, readme, samples) {
+        var method = 'constructor';
         logger.entry(method, readme, samples);
         if (!packageJson || typeof (packageJson) !== 'object') {
             throw new Error('package.json is required and must be an object');
@@ -69,24 +69,24 @@ class Metadata {
      *
      * @private
      */
-    _validName(name) {
-        const validChars = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    Metadata.prototype._validName = function (name) {
+        var validChars = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'];
-        for (let i = 0; i < name.length; i++) {
-            const strChar = name.charAt(i);
+        for (var i = 0; i < name.length; i++) {
+            var strChar = name.charAt(i);
             if (validChars.indexOf(strChar) === -1) {
                 return false;
             }
         }
         return true;
-    }
+    };
     /**
      * Returns the samples for this template.
      * @return {object} the sample files for the template
      */
-    getSamples() {
+    Metadata.prototype.getSamples = function () {
         return this.samples;
-    }
+    };
     /**
      * Returns the sample for this template in the given locale. This may be null.
      * If no locale is specified returns the default sample if it has been specified.
@@ -94,7 +94,7 @@ class Metadata {
      * @param {string} locale the IETF language code for the language
      * @return {string} the sample file for the template in the given locale or null
      */
-    getSample(locale) {
+    Metadata.prototype.getSample = function (locale) {
         if (!locale && 'default' in this.samples) {
             return this.samples.default;
         }
@@ -104,48 +104,49 @@ class Metadata {
         else {
             return null;
         }
-    }
+    };
     /**
      * Returns the README.md for this template. This may be null if the template does not have a README.md
      * @return {String} the README.md file for the template or null
      */
-    getREADME() {
+    Metadata.prototype.getREADME = function () {
         return this.readme;
-    }
+    };
     /**
      * Returns the package.json for this template.
      * @return {object} the Javascript object for package.json
      */
-    getPackageJson() {
+    Metadata.prototype.getPackageJson = function () {
         return this.packageJson;
-    }
+    };
     /**
      * Returns the name for this template.
      * @return {string} the name of the template
      */
-    getName() {
+    Metadata.prototype.getName = function () {
         return this.packageJson.name;
-    }
+    };
     /**
      * Returns the description for this template.
      * @return {string} the description of the template
      */
-    getDescription() {
+    Metadata.prototype.getDescription = function () {
         return this.packageJson.description;
-    }
+    };
     /**
      * Returns the version for this template.
      * @return {string} the description of the template
      */
-    getVersion() {
+    Metadata.prototype.getVersion = function () {
         return this.packageJson.version;
-    }
+    };
     /**
      * Returns the identifier for this template, formed from name@version.
      * @return {string} the identifier of the template
      */
-    getIdentifier() {
+    Metadata.prototype.getIdentifier = function () {
         return this.packageJson.name + '@' + this.packageJson.version;
-    }
-}
+    };
+    return Metadata;
+}());
 module.exports = Metadata;

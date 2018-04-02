@@ -14,7 +14,7 @@
 
 'use strict';
 
-const index = require('../lib/index');
+const index = require('../src/index');
 
 const chai = require('chai');
 

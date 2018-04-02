@@ -14,7 +14,7 @@
 
 'use strict';
 const moo = require('moo');
-const logger = require('../lib/logger');
+const logger = require('../src/logger');
 
 // we use lexer states to distinguish between the tokens
 // in the text and the tokens inside the variables

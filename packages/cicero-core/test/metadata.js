@@ -14,7 +14,7 @@
 
 'use strict';
 
-const Metadata = require('../lib/metadata');
+const Metadata = require('../src/metadata');
 
 const chai = require('chai');
 

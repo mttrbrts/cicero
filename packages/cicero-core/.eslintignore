@@ -2,4 +2,5 @@ coverage
 node_modules
 out
 lib/tdl.js
+src/tdl.js
 test/data

@@ -12,16 +12,16 @@
  * limitations under the License.
  */
 'use strict';
-const winston = require('winston');
-const fs = require('fs');
-const env = process.env.NODE_ENV || 'development';
-const tsFormat = () => (new Date()).toLocaleTimeString();
-const logDir = 'log';
+var winston = require('winston');
+var fs = require('fs');
+var env = process.env.NODE_ENV || 'development';
+var tsFormat = function () { return (new Date()).toLocaleTimeString(); };
+var logDir = 'log';
 // Create the log directory if it does not exist
 if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir);
 }
-let logger = new (winston.Logger)({
+var logger = new (winston.Logger)({
     transports: [
         new (winston.transports.Console)({
             colorize: true,
@@ -30,7 +30,7 @@ let logger = new (winston.Logger)({
         }),
         new (winston.transports.File)({
             name: 'logs-file',
-            filename: `${logDir}/trace.log`,
+            filename: logDir + "/trace.log",
             level: env === 'development' ? 'debug' : 'info'
         })
     ]

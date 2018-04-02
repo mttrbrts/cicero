@@ -16,7 +16,7 @@
 
 const Template = require('cicero-core').Template;
 const Clause = require('cicero-core').Clause;
-const Engine = require('../lib/engine');
+const Engine = require('../src/engine');
 
 const chai = require('chai');
 
